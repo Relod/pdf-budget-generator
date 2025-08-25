@@ -5,7 +5,7 @@ const fs = require('fs');
 const { generatePdf } = require('./pdf_generator');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
 
 const UPLOAD_DIR = './uploads';
@@ -92,5 +92,5 @@ app.get('/history', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Servidor rodando em http://localhost:3000`);
+    console.log(`Aplicação iniciada com sucesso`);
 });

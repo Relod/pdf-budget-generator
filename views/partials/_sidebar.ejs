@@ -1,0 +1,26 @@
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="./contents/logo.png" alt="Logo" class="sidebar-logo">
+        <h3 class="sidebar-title">Gerador de Orçamentos</h3>
+    </div>
+    <ul class="sidebar-menu">
+        <li class="sidebar-menu-item <%= currentPage === 'novo' ? 'active' : '' %>">
+            <a href="/">
+                <i class="bi bi-plus-square-fill"></i>
+                <span>Novo Orçamento</span>
+            </a>
+        </li>
+        <li class="sidebar-menu-item <%= currentPage === 'planilha' ? 'active' : '' %>">
+            <a href="/planilha">
+                <i class="bi bi-table"></i>
+                <span>Planilha</span>
+            </a>
+        </li>
+        <li class="sidebar-menu-item <%= currentPage === 'historico' ? 'active' : '' %>">
+            <a href="/history">
+                <i class="bi bi-clock-history"></i>
+                <span>Histórico</span>
+            </a>
+        </li>
+    </ul>
+</aside>

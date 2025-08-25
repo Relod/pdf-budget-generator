@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilha - Sistema de Orçamentos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .table-responsive { height: 60vh; overflow-y: auto; font-size: 0.9rem; }
+        .table th { position: sticky; top: 0; background-color: #343a40; color: white; z-index: 10; padding: 8px; font-weight: 600; white-space: nowrap; }
+        .table td { padding: 6px; vertical-align: middle; }
+        .tecnicos-dropdown, .status-dropdown { padding: 4px; font-size: 0.9rem; width: 100%; }
+        .filter-section { background-color: #fff; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+        .form-control-sm { font-size: 0.85rem; padding: 4px 8px; }
+        .nav-tabs .nav-link.active { background-color: var(--sidebar-bg); color: white; border-color: var(--sidebar-bg); }
+        .nav-tabs .nav-link { color: var(--sidebar-bg); }
+        .table td { overflow: hidden; text-overflow: ellipsis; }
+        .table td textarea { white-space: pre-wrap; word-wrap: break-word; min-height: 40px; resize: vertical; }
+        .nowrap, .action-buttons { white-space: nowrap; }
+        .link-cell a { cursor: pointer; text-decoration: underline; color: #0d6efd; }
+        .link-item { display: flex; align-items: center; margin-bottom: 2px; }
+        .link-item i { cursor: pointer; margin-left: 5px; }
+    </style>
+</head>
+<body>
+    <%- include('partials/_sidebar', { currentPage: 'planilha' }) %>
+
+    <div class="main-content">
+        <%- include('partials/_header') %>
+
+        <main class="container-fluid p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-table"></i> Planilha de Controle</h2>
+                <div>
+                    <button class="btn btn-logo me-2" id="add-row"><i class="bi bi-plus-circle"></i> Nova Linha</button>
+                    <button class="btn btn-success" id="export-btn"><i class="bi bi-download"></i> Exportar</button>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <ul class="nav nav-tabs mb-3" id="planilhaTabs" role="tablist">
+                    <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ativos" type="button">Ativos</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#finalizados" type="button">Finalizados</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#rejeitados" type="button">Rejeitados</button></li>
+                </ul>
+                <div class="row g-3">
+                    <div class="col-md-3"><label class="form-label">Filtrar por Técnico:</label><select class="form-select form-select-sm" id="filter-tecnico"><option value="">Todos</option><option>Gustavo</option><option>Gabriel</option><option>Diogo</option><option>Luís</option><option>Paulo</option><option>Gustavo/Gabriel</option><option>Gustavo/Diogo</option><option>Diogo/Gabriel</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Filtrar por Status:</label><select class="form-select form-select-sm" id="filter-status"><option value="">Todos</option><option>A passar</option><option>Aguardando aprovação</option><option>Aprovado</option><option>Em andamento</option><option>Recusado</option><option>Aguardando Cliente</option><option>Finalizado</option><option>Verificar</option><option>Telefone Inexistente</option></select></div>
+                    <div class="col-md-3"><label class="form-label">Buscar por Cliente:</label><input type="text" class="form-control form-control-sm" id="search-cliente" placeholder="Nome do cliente"></div>
+                    <div class="col-md-3"><label class="form-label">Buscar por OS:</label><input type="text" class="form-control form-control-sm" id="search-os" placeholder="Número da OS"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="planilhaTabContent">
+                <div class="tab-pane fade show active" id="ativos" role="tabpanel"><div class="table-responsive"><table class="table table-bordered table-hover bg-white"><thead><tr><th width="120">Nº OS</th><th>Cliente</th><th>Defeito</th><th width="140">Técnico</th><th width="160">Status</th><th width="200">Links</th><th width="120">Valor (R$)</th><th width="120">Valor à Vista (R$)</th><th width="100">Ações</th></tr></thead><tbody id="planilha-body"></tbody></table></div></div>
+                <div class="tab-pane fade" id="finalizados" role="tabpanel"><div class="table-responsive"><table class="table table-bordered table-hover bg-white"><thead><tr><th width="120">Nº OS</th><th>Cliente</th><th>Defeito</th><th width="140">Técnico</th><th width="160">Status</th><th width="200">Links</th><th width="120">Valor (R$)</th><th width="120">Valor à Vista (R$)</th><th width="100">Ações</th></tr></thead><tbody id="finalizados-body"></tbody></table></div></div>
+                <div class="tab-pane fade" id="rejeitados" role="tabpanel"><div class="table-responsive"><table class="table table-bordered table-hover bg-white"><thead><tr><th width="120">Nº OS</th><th>Cliente</th><th>Defeito</th><th width="140">Técnico</th><th width="160">Status</th><th width="200">Links</th><th width="120">Valor (R$)</th><th width="120">Valor à Vista (R$)</th><th width="100">Ações</th></tr></thead><tbody id="rejeitados-body"></tbody></table></div></div>
+            </div>
+            <div class="mt-3"><small class="text-muted">Total de ativos: <span id="total-ativos">0</span></small><small class="text-muted ms-3">Total de finalizados: <span id="total-finalizados">0</span></small><small class="text-muted ms-3">Total de rejeitados: <span id="total-rejeitados">0</span></small></div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const tecnicos = ['Gustavo', 'Gabriel', 'Diogo', 'Luís', 'Paulo', 'Gustavo/Gabriel', 'Gustavo/Diogo', 'Diogo/Gabriel'];
+            const statusList = ['A passar', 'Aguardando aprovação', 'Aprovado', 'Em andamento', 'Recusado', 'Aguardando Cliente', 'Finalizado', 'Verificar', 'Telefone Inexistente'];
+            
+            let planilhaData = [];
+            let finalizadosData = [];
+            let rejeitadosData = [];
+            let nextId = 1;
+            
+            const tbodyAtivos = document.getElementById('planilha-body');
+            const tbodyFinalizados = document.getElementById('finalizados-body');
+            const tbodyRejeitados = document.getElementById('rejeitados-body');
+            const totalAtivos = document.getElementById('total-ativos');
+            const totalFinalizados = document.getElementById('total-finalizados');
+            const totalRejeitados = document.getElementById('total-rejeitados');
+            const addRowBtn = document.getElementById('add-row');
+            const exportBtn = document.getElementById('export-btn');
+            
+            const filterTecnico = document.getElementById('filter-tecnico');
+            const filterStatus = document.getElementById('filter-status');
+            const searchCliente = document.getElementById('search-cliente');
+            const searchOS = document.getElementById('search-os');
+            
+            async function loadData() {
+                try {
+                    const response = await fetch('/api/planilha');
+                    const data = await response.json();
+                    planilhaData = data.planilhaData || [];
+                    finalizadosData = data.finalizadosData || [];
+                    rejeitadosData = data.rejeitadosData || [];
+                    nextId = data.nextId || 1;
+                    renderTables();
+                } catch (error) {
+                    console.error('Erro ao carregar dados da planilha:', error);
+                    alert('Não foi possível carregar os dados da planilha.');
+                }
+            }
+            
+            async function saveData() {
+                const dataToSave = {
+                    planilhaData,
+                    finalizadosData,
+                    rejeitadosData,
+                    nextId
+                };
+                try {
+                    await fetch('/api/planilha', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataToSave)
+                    });
+                } catch (error) {
+                    console.error('Erro ao salvar dados da planilha:', error);
+                    alert('Erro de comunicação. Suas alterações podem não ter sido salvas.');
+                }
+            }
+
+            function findItem(id) {
+                return planilhaData.find(i => i.id === id) || finalizadosData.find(i => i.id === id) || rejeitadosData.find(i => i.id === id);
+            }
+
+            function renderLinksCell(id, linksData) {
+                const links = linksData || [];
+                let content = '<div>';
+                links.forEach((link, index) => {
+                    const displayText = link.text || link.url;
+                    const safeUrl = (link.url && !link.url.startsWith('http')) ? 'http://' + link.url : link.url;
+                    content += `<div class="link-item">
+                                    <a href="${safeUrl}" target="_blank" title="${link.url}">${displayText}</a>
+                                    <i class="bi bi-pencil-square text-primary" onclick="editLink(${id}, ${index})"></i>
+                                    <i class="bi bi-trash text-danger" onclick="deleteLink(${id}, ${index})"></i>
+                                </div>`;
+                });
+                if (links.length < 4) {
+                    content += `<a onclick="addLink(${id})">[+ Adicionar Link]</a>`;
+                }
+                content += '</div>';
+                return `<td class="link-cell">${content}</td>`;
+            }
+            
+            window.addLink = async function(id) {
+                const item = findItem(id);
+                if (!item) return;
+                if (item.links && item.links.length >= 4) {
+                    alert('Você pode adicionar no máximo 4 links.');
+                    return;
+                }
+                const newUrl = prompt("Insira a URL (link do produto):");
+                if (newUrl === null || newUrl.trim() === '') return;
+                const newText = prompt("Insira o texto para exibir (ex: 'Tela Notebook'):");
+                
+                if (!item.links) item.links = [];
+                item.links.push({ url: newUrl, text: newText || '' });
+                
+                await saveData();
+                renderTables();
+            };
+
+            window.editLink = async function(id, index) {
+                const item = findItem(id);
+                if (!item || !item.links || !item.links[index]) return;
+                
+                const currentLink = item.links[index];
+                const newUrl = prompt("Edite a URL:", currentLink.url);
+                if (newUrl === null) return;
+                const newText = prompt("Edite o texto para exibir:", currentLink.text);
+
+                item.links[index] = { url: newUrl, text: newText || '' };
+
+                await saveData();
+                renderTables();
+            };
+
+            window.deleteLink = async function(id, index) {
+                const item = findItem(id);
+                if (!item || !item.links || !item.links[index]) return;
+
+                if (confirm('Tem certeza que deseja excluir este link?')) {
+                    item.links.splice(index, 1);
+                    await saveData();
+                    renderTables();
+                }
+            };
+            
+            async function addNewRow(data = null) {
+                const isManualAdd = !data;
+                const id = isManualAdd ? nextId++ : data.id;
+                const rowData = data || {
+                    id: id, os: '', cliente: '', defeito: '', tecnico: '', status: 'A passar',
+                    links: [], valor: '', valorVista: ''
+                };
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', id);
+                row.innerHTML = `
+                    <td><input type="text" class="form-control form-control-sm" value="${rowData.os}" onchange="updateCell(${id}, 'os', this.value)"></td>
+                    <td><input type="text" class="form-control form-control-sm" value="${rowData.cliente}" onchange="updateCell(${id}, 'cliente', this.value)"></td>
+                    <td><textarea class="form-control form-control-sm" onchange="updateCell(${id}, 'defeito', this.value)">${rowData.defeito}</textarea></td>
+                    <td><select class="tecnicos-dropdown" onchange="updateCell(${id}, 'tecnico', this.value)"><option value="">Selecione...</option>${tecnicos.map(tec => `<option value="${tec}" ${rowData.tecnico === tec ? 'selected' : ''}>${tec}</option>`).join('')}</select></td>
+                    <td><select class="status-dropdown" onchange="updateStatus(${id}, this.value)">${statusList.map(st => `<option value="${st}" ${rowData.status === st ? 'selected' : ''}>${st}</option>`).join('')}</select></td>
+                    ${renderLinksCell(id, rowData.links)}
+                    <td><input type="number" step="0.01" class="form-control form-control-sm" value="${rowData.valor}" onchange="updateCell(${id}, 'valor', this.value)"></td>
+                    <td><input type="number" step="0.01" class="form-control form-control-sm" value="${rowData.valorVista}" onchange="updateCell(${id}, 'valorVista', this.value)"></td>
+                    <td class="action-buttons"><button class="btn btn-sm btn-danger" onclick="deleteRow(${id})"><i class="bi bi-trash"></i></button></td>
+                `;
+                tbodyAtivos.insertBefore(row, tbodyAtivos.firstChild);
+                if (isManualAdd) {
+                    planilhaData.push(rowData);
+                    await saveData();
+                    updateTotals();
+                }
+            }
+            
+            window.updateStatus = async function(id, newStatus) {
+                const index = planilhaData.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    planilhaData[index].status = newStatus;
+                    if (newStatus === 'Finalizado') { 
+                        finalizadosData.push(planilhaData.splice(index, 1)[0]); 
+                    } else if (newStatus === 'Recusado') { 
+                        rejeitadosData.push(planilhaData.splice(index, 1)[0]); 
+                    }
+                    await saveData(); 
+                    renderTables();
+                }
+            };
+
+            window.updateCell = async function(id, field, value) {
+                const item = findItem(id);
+                if (item) {
+                    item[field] = value;
+                    await saveData();
+                }
+            };
+            
+            window.deleteRow = async function(id) {
+                if (confirm('Tem certeza que deseja excluir esta linha?')) {
+                    let index = planilhaData.findIndex(item => item.id === id);
+                    if (index !== -1) { planilhaData.splice(index, 1); } 
+                    else {
+                        index = finalizadosData.findIndex(item => item.id === id);
+                        if (index !== -1) { finalizadosData.splice(index, 1); } 
+                        else {
+                            index = rejeitadosData.findIndex(item => item.id === id);
+                            if (index !== -1) { rejeitadosData.splice(index, 1); }
+                        }
+                    }
+                    await saveData();
+                    renderTables();
+                }
+            };
+
+            function updateTotals() {
+                totalAtivos.textContent = planilhaData.length;
+                totalFinalizados.textContent = finalizadosData.length;
+                totalRejeitados.textContent = rejeitadosData.length;
+            }
+            
+            function renderAtivos() {
+                tbodyAtivos.innerHTML = '';
+                let filteredData = [...planilhaData].reverse(); 
+                if (filterTecnico.value) { filteredData = filteredData.filter(item => item.tecnico === filterTecnico.value); }
+                if (filterStatus.value) { filteredData = filteredData.filter(item => item.status === filterStatus.value); }
+                if (searchCliente.value) { filteredData = filteredData.filter(item => item.cliente.toLowerCase().includes(searchCliente.value.toLowerCase())); }
+                if (searchOS.value) { filteredData = filteredData.filter(item => item.os.includes(searchOS.value)); }
+                filteredData.forEach(data => {
+                     const row = document.createElement('tr');
+                     row.setAttribute('data-id', data.id);
+                     row.innerHTML = `
+                        <td><input type="text" class="form-control form-control-sm" value="${data.os}" onchange="updateCell(${data.id}, 'os', this.value)"></td>
+                        <td><input type="text" class="form-control form-control-sm" value="${data.cliente}" onchange="updateCell(${data.id}, 'cliente', this.value)"></td>
+                        <td><textarea class="form-control form-control-sm" onchange="updateCell(${data.id}, 'defeito', this.value)">${data.defeito}</textarea></td>
+                        <td><select class="tecnicos-dropdown" onchange="updateCell(${data.id}, 'tecnico', this.value)"><option value="">Selecione...</option>${tecnicos.map(tec => `<option value="${tec}" ${data.tecnico === tec ? 'selected' : ''}>${tec}</option>`).join('')}</select></td>
+                        <td><select class="status-dropdown" onchange="updateStatus(${data.id}, this.value)">${statusList.map(st => `<option value="${st}" ${data.status === st ? 'selected' : ''}>${st}</option>`).join('')}</select></td>
+                        ${renderLinksCell(data.id, data.links)}
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" value="${data.valor}" onchange="updateCell(${data.id}, 'valor', this.value)"></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" value="${data.valorVista}" onchange="updateCell(${data.id}, 'valorVista', this.value)"></td>
+                        <td class="action-buttons"><button class="btn btn-sm btn-danger" onclick="deleteRow(${data.id})"><i class="bi bi-trash"></i></button></td>
+                     `;
+                     tbodyAtivos.appendChild(row);
+                });
+            }
+            
+            function renderArchivedTable(tbody, dataList) {
+                tbody.innerHTML = '';
+                [...dataList].reverse().forEach(data => {
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-id', data.id);
+                    row.innerHTML = `
+                        <td><input type="text" class="form-control form-control-sm" value="${data.os}" onchange="updateCell(${data.id}, 'os', this.value)"></td>
+                        <td><input type="text" class="form-control form-control-sm" value="${data.cliente}" onchange="updateCell(${data.id}, 'cliente', this.value)"></td>
+                        <td><textarea class="form-control form-control-sm" onchange="updateCell(${data.id}, 'defeito', this.value)">${data.defeito}</textarea></td>
+                        <td><select class="tecnicos-dropdown" onchange="updateCell(${data.id}, 'tecnico', this.value)"><option value="">Selecione...</option>${tecnicos.map(tec => `<option value="${tec}" ${data.tecnico === tec ? 'selected' : ''}>${tec}</option>`).join('')}</select></td>
+                        <td><select class="status-dropdown" disabled><option>${data.status}</option></select></td>
+                        ${renderLinksCell(data.id, data.links)}
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" value="${data.valor}" onchange="updateCell(${data.id}, 'valor', this.value)"></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm" value="${data.valorVista}" onchange="updateCell(${data.id}, 'valorVista', this.value)"></td>
+                        <td class="action-buttons"><button class="btn btn-sm btn-danger" onclick="deleteRow(${data.id})"><i class="bi bi-trash"></i></button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            function renderTables() {
+                renderAtivos();
+                renderArchivedTable(tbodyFinalizados, finalizadosData);
+                renderArchivedTable(tbodyRejeitados, rejeitadosData);
+                updateTotals();
+            }
+            
+            addRowBtn.addEventListener('click', () => addNewRow());
+            exportBtn.addEventListener('click', function() {
+                const allData = { 
+                    ativos: planilhaData, 
+                    finalizados: finalizadosData, 
+                    rejeitados: rejeitadosData 
+                };
+                const dataStr = JSON.stringify(allData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportFileDefaultName = 'planilha_completa.json';
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            });
+            
+            filterTecnico.addEventListener('change', renderAtivos);
+            filterStatus.addEventListener('change', renderAtivos);
+            searchCliente.addEventListener('input', renderAtivos);
+            searchOS.addEventListener('input', renderAtivos);
+            
+            loadData();
+        });
+    </script>
+</body>
+</html>

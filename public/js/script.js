@@ -25,22 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     const pdfUrl = `/data/${result.file}`;
-                    
-                    // Força o download do PDF em vez de abrir
-                    const link = document.createElement('a');
-                    link.href = pdfUrl;
-                    link.download = result.file;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Reseta o formulário
-                    budgetForm.reset();
-                    
-                    // Limpa as listas de peças e mão de obra
-                    document.getElementById('pecas-list').innerHTML = '';
-                    document.getElementById('mo-list').innerHTML = '';
-                    
+                    window.open(pdfUrl, '_blank');
                 } else {
                     alert(`Erro ao gerar PDF: ${result.error || 'Erro desconhecido.'}`);
                 }
@@ -77,4 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('add-peca-btn')?.addEventListener('click', () => addItem('pecas-list', 'peca-desc', 'peca-valor'));
     document.getElementById('add-mo-btn')?.addEventListener('click', () => addItem('mo-list', 'mo-desc', 'mo-valor'));
+});
+// Adicione este bloco no final do arquivo script.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleButton = document.getElementById('menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (toggleButton) {
+        toggleButton.addEventListener('click', () => {
+            // No Desktop, ele adiciona uma classe no body para encolher o conteúdo
+            if (window.innerWidth > 992) {
+                document.body.classList.toggle('sidebar-closed');
+            } else {
+                // No mobile, ele mostra/esconde a sidebar
+                sidebar.classList.toggle('active');
+            }
+        });
+    }
 });
